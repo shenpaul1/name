@@ -2,206 +2,144 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>照顧者心靈雞湯 - 冥想與呼吸</title>
+    <title>不重複隨機抽籤系統</title>
     <style>
-        :root {
-            --bg-color: #F3E5F5;
-            --primary-purple: #9575CD;
-            --dark-purple: #5E35B1;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-        }
-
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            overflow: hidden; display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
-        }
-
-        /* 影片背景 */
-        .video-background {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            opacity: 0; transition: opacity 1s; pointer-events: none;
-        }
-        .video-background.active { opacity: 0.5; }
-        iframe { width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.77vh; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-
-        /* 控制按鈕 */
-        .controls { position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
-        .ctrl-btn {
-            background: rgba(255, 255, 255, 0.7); border: 1px solid white;
-            width: 45px; height: 45px; border-radius: 50%; cursor: pointer;
-            font-size: 1.2rem; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.3s;
-        }
-
-        /* 卡片主體 */
-        .card {
-            background: var(--glass-bg); padding: 40px 25px; border-radius: 35px;
-            box-shadow: 0 15px 35px rgba(103, 58, 183, 0.15); text-align: center;
-            max-width: 380px; width: 85%; border: 2px solid white;
-            backdrop-filter: blur(12px); z-index: 10; position: relative;
-        }
-
-        /* 呼吸計時器樣式 */
-        #breath-section { display: none; margin: 20px 0; }
-        .breath-circle-wrap {
-            width: 150px; height: 150px; margin: 0 auto;
-            position: relative; display: flex; align-items: center; justify-content: center;
-        }
-        .breath-circle {
-            width: 60px; height: 60px; background: var(--primary-purple);
-            border-radius: 50%; opacity: 0.6;
-            box-shadow: 0 0 20px var(--primary-purple);
-            transition: all 4s linear; /* 透過 JS 動態控制速度 */
-        }
-        #breath-text { margin-top: 20px; font-size: 1.3rem; color: var(--dark-purple); font-weight: bold; }
-
-        /* 語錄樣式 */
-        #quote-container { min-height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 25px; }
-        #quote { font-size: 1.15rem; line-height: 1.8; transition: opacity 0.6s; }
-
-        .main-btn {
-            background-color: var(--primary-purple); color: white; border: none;
-            padding: 15px 30px; border-radius: 50px; font-size: 1rem;
-            cursor: pointer; box-shadow: 0 6px 15px rgba(149, 117, 205, 0.3); width: 100%;
-        }
-        .secondary-btn {
-            background: none; border: 1px solid var(--primary-purple); color: var(--primary-purple);
-            margin-top: 15px; padding: 10px; border-radius: 50px; width: 100%; cursor: pointer;
-        }
-
-        footer { margin-top: 25px; font-size: 0.7rem; color: #7E57C2; opacity: 0.7; }
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; color: #333; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a73e8; }
+        .setup-section, .draw-section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+        textarea { width: 100%; height: 150px; margin: 10px 0; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
+        .controls { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-size: 16px; transition: 0.2s; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-draw { background: #34a853; color: white; width: 100%; font-size: 24px; padding: 20px; margin-top: 10px; }
+        .btn-draw:disabled { background: #ccc; cursor: not-allowed; }
+        #winner-display { text-align: center; margin: 20px 0; min-height: 120px; padding: 20px; background: #fffde7; border: 2px dashed #fbc02d; border-radius: 8px; }
+        #winner-name { font-size: 48px; font-weight: bold; color: #d32f2f; margin: 0; }
+        #winner-id { font-size: 24px; color: #555; }
+        .stats { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; }
+        .history { max-height: 200px; overflow-y: auto; background: #fafafa; padding: 10px; border-radius: 4px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="video-background" id="videoLayer">
-    <iframe src="https://www.youtube.com/embed/Z0p9Oon_S8E?autoplay=1&mute=1&loop=1&playlist=Z0p9Oon_S8E&controls=0" frameborder="0"></iframe>
-</div>
+<div class="container">
+    <h1>🎊 不重複隨機抽籤系統</h1>
 
-<audio id="bgm" loop><source src="bgm.mp3" type="audio/mpeg"></audio>
-
-<div class="controls">
-    <button class="ctrl-btn" onclick="toggleVideo()">🎬</button>
-    <button class="ctrl-btn" id="music-btn" onclick="toggleMusic()">🔇</button>
-</div>
-
-<div class="card">
-    <div id="content-section">
-        <span style="font-size: 2.5rem;">🪻</span>
-        <h1>親愛的，請給自己一點空間</h1>
-        <div id="quote-container"><div id="quote">深呼吸，準備好進入平靜了嗎？</div></div>
-        <button class="main-btn" onclick="getNewQuote()">換一句暖心語錄</button>
-    </div>
-
-    <div id="breath-section">
-        <h1>專注呼吸 (4-4-8 節奏)</h1>
-        <div class="breath-circle-wrap">
-            <div class="breath-circle" id="circle"></div>
+    <div class="setup-section">
+        <h3>1. 匯入名單</h3>
+        <p>請輸入或貼上名單 (每行一筆，格式：學號 姓名 或 學號,姓名)</p>
+        <textarea id="input-list" placeholder="範例：&#10;1001 王小明&#10;1002 李小華"></textarea>
+        <div class="controls">
+            <input type="file" id="file-upload" accept=".txt,.csv">
+            <button class="btn-primary" onclick="generateSamples()">產生100筆範例</button>
+            <button class="btn-primary" onclick="updateList()">確認更新名單</button>
         </div>
-        <div id="breath-text">準備開始...</div>
     </div>
 
-    <button class="secondary-btn" id="mode-btn" onclick="toggleMode()">切換至冥想呼吸模式</button>
-    <footer>薰衣草影音站 ‧ 您的靜心角落</footer>
+    <div class="draw-section">
+        <div class="stats">
+            <span>剩餘人數：<span id="remain-count">0</span></span>
+            <span>已抽出：<span id="drawn-count">0</span></span>
+        </div>
+        
+        <button id="draw-btn" class="btn-draw" onclick="draw()">🎲 隨機抽取一位</button>
+
+        <div id="winner-display">
+            <p id="winner-label" style="margin:0; color:#888;">恭喜中獎者</p>
+            <h2 id="winner-name">請點擊按鈕抽籤</h2>
+            <div id="winner-id"></div>
+        </div>
+    </div>
+
+    <h3>抽籤歷史紀錄</h3>
+    <div id="history-list" class="history">尚未有紀錄</div>
 </div>
 
 <script>
-    // 1. 基礎設定
-    const bgm = document.getElementById('bgm');
-    const musicBtn = document.getElementById('music-btn');
-    let isPlaying = false;
-    let isVideoActive = false;
-    let isBreathMode = false;
+    let pool = [];
+    let drawn = [];
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    function toggleMusic() {
-        if (isPlaying) { bgm.pause(); musicBtn.innerText = "🔇"; } 
-        else { bgm.play(); musicBtn.innerText = "🔊"; }
-        isPlaying = !isPlaying;
+    // 播放中獎音效 (使用 Web Audio API 合成聲音)
+    function playWinSound() {
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.4);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + i * 0.1);
+            osc.stop(audioCtx.currentTime + i * 0.1 + 0.4);
+        });
     }
 
-    function toggleVideo() {
-        isVideoActive = !isVideoActive;
-        document.getElementById('videoLayer').classList.toggle('active', isVideoActive);
-    }
-
-    // 2. 模式切換
-    function toggleMode() {
-        isBreathMode = !isBreathMode;
-        const content = document.getElementById('content-section');
-        const breath = document.getElementById('breath-section');
-        const modeBtn = document.getElementById('mode-btn');
-
-        if (isBreathMode) {
-            content.style.display = 'none';
-            breath.style.display = 'block';
-            modeBtn.innerText = '切換回暖心語錄';
-            startBreathing();
-        } else {
-            content.style.display = 'block';
-            breath.style.display = 'none';
-            modeBtn.innerText = '切換至冥想呼吸模式';
-            stopBreathing();
-        }
-    }
-
-    // 3. 呼吸計時器邏輯 (4-4-8 節奏)
-    let breathInterval;
-    function startBreathing() {
-        const circle = document.getElementById('circle');
-        const text = document.getElementById('breath-text');
+    // 更新名單
+    function updateList() {
+        const text = document.getElementById('input-list').value.trim();
+        if (!text) { alert('請輸入名單！'); return; }
         
-        const runCycle = () => {
-            // 吸氣 4s
-            text.innerText = "吸氣... (4秒)";
-            circle.style.transition = "all 4s ease-out";
-            circle.style.transform = "scale(2.5)";
-            circle.style.opacity = "1";
+        pool = text.split('\n').map(line => {
+            const parts = line.split(/[,，\s\t]+/);
+            return { id: parts[0] || 'N/A', name: parts[1] || parts[0] };
+        });
+        drawn = [];
+        updateUI();
+        alert(`名單更新成功，共有 ${pool.length} 人。`);
+    }
 
-            setTimeout(() => {
-                // 憋氣 4s
-                text.innerText = "暫停... (4秒)";
-                setTimeout(() => {
-                    // 吐氣 8s
-                    text.innerText = "緩慢吐氣... (8秒)";
-                    circle.style.transition = "all 8s ease-in";
-                    circle.style.transform = "scale(1)";
-                    circle.style.opacity = "0.4";
-                }, 4000);
-            }, 4000);
+    // 隨機抽籤
+    function draw() {
+        if (pool.length === 0) return;
+        
+        const index = Math.floor(Math.random() * pool.length);
+        const winner = pool.splice(index, 1)[0]; // 移出名單，確保不重複
+        drawn.push(winner);
+        
+        // 顯示結果
+        document.getElementById('winner-name').innerText = winner.name;
+        document.getElementById('winner-id').innerText = `學號: ${winner.id}`;
+        
+        playWinSound();
+        updateUI();
+        updateHistory();
+    }
+
+    function updateUI() {
+        document.getElementById('remain-count').innerText = pool.length;
+        document.getElementById('drawn-count').innerText = drawn.length;
+        document.getElementById('draw-btn').disabled = (pool.length === 0);
+    }
+
+    function updateHistory() {
+        const historyDiv = document.getElementById('history-list');
+        historyDiv.innerHTML = drawn.map((p, i) => `<div>${i+1}. [${p.id}] ${p.name}</div>`).reverse().join('');
+    }
+
+    // 產生100筆測試資料
+    function generateSamples() {
+        let samples = "";
+        for (let i = 1; i <= 100; i++) {
+            samples += `ID${1000 + i} 姓名${i}\n`;
+        }
+        document.getElementById('input-list').value = samples.trim();
+    }
+
+    // 處理檔案上傳
+    document.getElementById('file-upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('input-list').value = e.target.result;
         };
-
-        runCycle();
-        breathInterval = setInterval(runCycle, 16500); // 總循環約 16秒
-    }
-
-    function stopBreathing() {
-        clearInterval(breathInterval);
-        document.getElementById('circle').style.transform = "scale(1)";
-    }
-
-    // 4. 語錄資料 (500句架構)
-    const quotes = [
-         "你現在所做的一切，是這世界上最溫柔的承擔。", "你的陪伴，就是最良效的藥方。", "不一定要做到完美，你的用心就是最好的照顧。", 
-        "因為有你，這段路才不顯得那麼孤單。", "你可以累，這完全沒有問題。", "不完美也沒關係，你已經盡力了。",
-        "今天沒做完的事，就留給明天吧。", "你是照顧者，也是需要被呵護的孩子。", "哭出來也沒關係，眼淚能洗滌壓力。",
-        "現在，請跟我一起深呼吸：吸氣，吐氣。", "閉上眼，讓肩膀放鬆三秒鐘。", "把手放在心口，感受自己的心跳。",
-        "每一口呼吸，都是在為自己充電。", "今天的挑戰已過期，請領取明天的勇氣。", "你是光，即便在陰影中也依然閃耀。"
-        // ... 此處可持續擴充
-    ];
-
-    function getNewQuote() {
-        const q = document.getElementById('quote');
-        q.style.opacity = 0;
-        setTimeout(() => {
-            q.innerText = quotes[Math.floor(Math.random() * quotes.length)];
-            q.style.opacity = 1;
-        }, 600);
-    }
-
-    window.onload = getNewQuote;
+        reader.readAsText(file);
+    });
 </script>
 
 </body>
