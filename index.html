@@ -1,60 +1,90 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8"> 
-    <title>不重複隨機抽籤系統</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三欄式抽籤系統</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; color: #333; line-height: 1.6; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #1a73e8; }
-        .setup-section, .draw-section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
-        textarea { width: 100%; height: 150px; margin: 10px 0; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
-        .controls { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-size: 16px; transition: 0.2s; }
-        .btn-primary { background: #1a73e8; color: white; }
-        .btn-primary:hover { background: #1557b0; }
-        .btn-draw { background: #34a853; color: white; width: 100%; font-size: 24px; padding: 20px; margin-top: 10px; }
-        .btn-draw:disabled { background: #ccc; cursor: not-allowed; }
-        #winner-display { text-align: center; margin: 20px 0; min-height: 120px; padding: 20px; background: #fffde7; border: 2px dashed #fbc02d; border-radius: 8px; }
-        #winner-name { font-size: 48px; font-weight: bold; color: #d32f2f; margin: 0; }
-        #winner-id { font-size: 24px; color: #555; }
-        .stats { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; }
-        .history { max-height: 200px; overflow-y: auto; background: #fafafa; padding: 10px; border-radius: 4px; font-size: 14px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+        
+        /* 核心三欄排版 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr; /* 左:中:右 比例約 1 : 1.5 : 1 */
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 區塊共用樣式 */
+        .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .panel h3 { margin-top: 0; color: #1a73e8; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        
+        /* 左側：名單輸入區 */
+        textarea { width: 100%; height: 400px; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 6px; resize: none; font-size: 14px; line-height: 1.5; }
+        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; }
+        .btn-update { background-color: #3498db; color: white; }
+        .btn-update:hover { background-color: #2980b9; }
+        
+        /* 中間：抽籤主區 */
+        .draw-status { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+        .btn-draw { background-color: #e74c3c; color: white; font-size: 24px; padding: 20px; border-radius: 50px; box-shadow: 0 4px 0 #c0392b; margin-bottom: 30px; }
+        .btn-draw:hover { background-color: #c0392b; transform: translateY(2px); box-shadow: 0 2px 0 #962d22; }
+        .btn-draw:disabled { background-color: #bdc3c7; box-shadow: 0 4px 0 #95a5a6; cursor: not-allowed; }
+        
+        .winner-box { text-align: center; padding: 40px 20px; background: #fffde7; border: 3px dashed #fbc02d; border-radius: 12px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
+        .winner-title { color: #888; font-size: 16px; margin-bottom: 10px; }
+        .winner-name { font-size: 48px; font-weight: bold; color: #d32f2f; margin: 0; line-height: 1.2; }
+        .winner-id { font-size: 24px; color: #555; margin-top: 10px; }
+        
+        /* 右側：中獎名單區 */
+        .history-list { height: 400px; overflow-y: auto; padding-right: 5px; }
+        .history-item { background: #f9f9f9; padding: 12px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid #2ecc71; font-weight: bold; display: flex; justify-content: space-between; }
+        .history-item span.id { color: #7f8c8d; font-size: 14px; font-weight: normal; }
+
+        /* 響應式設計：小螢幕變為上下排列 */
+        @media (max-width: 900px) {
+            .grid-container { grid-template-columns: 1fr; }
+            textarea { height: 200px; }
+            .history-list { height: 250px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🎊 不重複隨機抽籤系統</h1>
+<h1 class="header">🎲 三欄式不重複抽籤系統</h1>
 
-    <div class="setup-section">
-        <h3>1. 匯入名單</h3>
-        <p>請輸入或貼上名單 (每行一筆，格式：學號 姓名 或 學號,姓名)</p>
-        <textarea id="input-list" placeholder="範例：&#10;1001 王小明&#10;1002 李小華"></textarea>
-        <div class="controls">
-            <input type="file" id="file-upload" accept=".txt,.csv">
-            <button class="btn-primary" onclick="generateSamples()">產生100筆範例</button>
-            <button class="btn-primary" onclick="updateList()">確認更新名單</button>
-        </div>
+<div class="grid-container">
+    <div class="panel">
+        <h3>1. 貼上名單</h3>
+        <p style="font-size: 13px; color: #666; margin-top: -5px;">支援直接貼上。格式：學號 姓名 (用空格或逗號隔開)</p>
+        <textarea id="input-list" placeholder="請在此貼上名單...&#10;1101 王大明&#10;1102 李小華"></textarea>
+        <button class="btn btn-update" onclick="updateList()">確認並載入名單</button>
     </div>
 
-    <div class="draw-section">
-        <div class="stats">
-            <span>剩餘人數：<span id="remain-count">0</span></span>
-            <span>已抽出：<span id="drawn-count">0</span></span>
+    <div class="panel">
+        <h3>2. 隨機抽籤</h3>
+        <div class="draw-status">
+            <span>待抽人數：<span id="remain-count" style="color: #3498db;">0</span> 人</span>
+            <span>已抽出：<span id="drawn-count" style="color: #e74c3c;">0</span> 人</span>
         </div>
         
-        <button id="draw-btn" class="btn-draw" onclick="draw()">🎲 隨機抽取一位</button>
+        <button id="draw-btn" class="btn btn-draw" onclick="draw()">🎊 開始抽籤 🎊</button>
 
-        <div id="winner-display">
-            <p id="winner-label" style="margin:0; color:#888;">恭喜中獎者</p>
-            <h2 id="winner-name">請點擊按鈕抽籤</h2>
-            <div id="winner-id"></div>
+        <div class="winner-box">
+            <div class="winner-title">目前中獎者</div>
+            <div id="winner-name" class="winner-name">等待抽籤...</div>
+            <div id="winner-id" class="winner-id"></div>
         </div>
     </div>
 
-    <h3>抽籤歷史紀錄</h3>
-    <div id="history-list" class="history">尚未有紀錄</div>
+    <div class="panel">
+        <h3>3. 中獎名單</h3>
+        <div id="history-list" class="history-list">
+            <div style="color: #aaa; text-align: center; margin-top: 20px;">尚未有中獎紀錄</div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -62,7 +92,7 @@
     let drawn = [];
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // 播放中獎音效 (使用 Web Audio API 合成聲音)
+    // 播放中獎音效
     function playWinSound() {
         const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
         notes.forEach((freq, i) => {
@@ -79,67 +109,63 @@
         });
     }
 
-    // 更新名單
+    // 載入名單
     function updateList() {
         const text = document.getElementById('input-list').value.trim();
-        if (!text) { alert('請輸入名單！'); return; }
+        if (!text) { alert('名單不可為空！請貼上資料。'); return; }
         
-        pool = text.split('\n').map(line => {
-            const parts = line.split(/[,，\s\t]+/);
-            return { id: parts[0] || 'N/A', name: parts[1] || parts[0] };
+        // 支援換行分割，並容許逗號、Tab或空格分開學號與姓名
+        pool = text.split('\n').filter(line => line.trim() !== '').map(line => {
+            const parts = line.trim().split(/[,，\s\t]+/);
+            return { 
+                id: parts.length > 1 ? parts[0] : '無學號', 
+                name: parts.length > 1 ? parts[1] : parts[0] 
+            };
         });
-        drawn = [];
+        
+        drawn = []; // 清空歷史
         updateUI();
-        alert(`名單更新成功，共有 ${pool.length} 人。`);
+        document.getElementById('winner-name').innerText = "等待抽籤...";
+        document.getElementById('winner-id').innerText = "";
     }
 
-    // 隨機抽籤
+    // 執行抽籤
     function draw() {
         if (pool.length === 0) return;
         
+        // 隨機選取並移出名單 (確保不重複)
         const index = Math.floor(Math.random() * pool.length);
-        const winner = pool.splice(index, 1)[0]; // 移出名單，確保不重複
-        drawn.push(winner);
+        const winner = pool.splice(index, 1)[0]; 
         
-        // 顯示結果
+        // 加入中獎名單並放到最前面
+        drawn.unshift(winner); 
+        
+        // 更新畫面
         document.getElementById('winner-name').innerText = winner.name;
-        document.getElementById('winner-id').innerText = `學號: ${winner.id}`;
+        document.getElementById('winner-id').innerText = winner.id !== '無學號' ? `學號: ${winner.id}` : '';
         
         playWinSound();
         updateUI();
-        updateHistory();
     }
 
+    // 更新介面與歷史名單
     function updateUI() {
         document.getElementById('remain-count').innerText = pool.length;
         document.getElementById('drawn-count').innerText = drawn.length;
         document.getElementById('draw-btn').disabled = (pool.length === 0);
-    }
-
-    function updateHistory() {
+        
         const historyDiv = document.getElementById('history-list');
-        historyDiv.innerHTML = drawn.map((p, i) => `<div>${i+1}. [${p.id}] ${p.name}</div>`).reverse().join('');
-    }
-
-    // 產生100筆測試資料
-    function generateSamples() {
-        let samples = "";
-        for (let i = 1; i <= 100; i++) {
-            samples += `ID${1000 + i} 姓名${i}\n`;
+        if (drawn.length === 0) {
+            historyDiv.innerHTML = '<div style="color: #aaa; text-align: center; margin-top: 20px;">尚未有中獎紀錄</div>';
+        } else {
+            historyDiv.innerHTML = drawn.map((p, i) => `
+                <div class="history-item">
+                    <span>${p.name}</span>
+                    <span class="id">${p.id}</span>
+                </div>
+            `).join('');
         }
-        document.getElementById('input-list').value = samples.trim();
     }
-
-    // 處理檔案上傳
-    document.getElementById('file-upload').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('input-list').value = e.target.result;
-        };
-        reader.readAsText(file);
-    });
 </script>
 
 </body>
