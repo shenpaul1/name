@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>三欄式抽籤系統</title>
+    <title>懸疑感！三欄式抽籤系統</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
         .header { text-align: center; margin-bottom: 20px; color: #2c3e50; }
@@ -11,56 +11,68 @@
         /* 核心三欄排版 */
         .grid-container {
             display: grid;
-            grid-template-columns: 1fr 1.5fr 1fr; /* 左:中:右 比例約 1 : 1.5 : 1 */
+            grid-template-columns: 1fr 1.5fr 1fr;
             gap: 20px;
             max-width: 1200px;
             margin: 0 auto;
         }
         
-        /* 區塊共用樣式 */
         .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .panel h3 { margin-top: 0; color: #1a73e8; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
         
         /* 左側：名單輸入區 */
-        textarea { width: 100%; height: 400px; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 6px; resize: none; font-size: 14px; line-height: 1.5; }
-        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; }
+        textarea { width: 100%; height: 250px; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 6px; resize: none; font-size: 14px; line-height: 1.5; margin-bottom: 10px; }
+        .file-upload-wrapper { margin-bottom: 10px; padding: 10px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 6px; text-align: center;}
+        
+        .btn { display: block; width: 100%; padding: 12px; margin-bottom: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; }
         .btn-update { background-color: #3498db; color: white; }
         .btn-update:hover { background-color: #2980b9; }
+        .btn-clear { background-color: #95a5a6; color: white; }
+        .btn-clear:hover { background-color: #7f8c8d; }
         
         /* 中間：抽籤主區 */
         .draw-status { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; margin-bottom: 20px; }
         .btn-draw { background-color: #e74c3c; color: white; font-size: 24px; padding: 20px; border-radius: 50px; box-shadow: 0 4px 0 #c0392b; margin-bottom: 30px; }
-        .btn-draw:hover { background-color: #c0392b; transform: translateY(2px); box-shadow: 0 2px 0 #962d22; }
+        .btn-draw:hover:not(:disabled) { background-color: #c0392b; transform: translateY(2px); box-shadow: 0 2px 0 #962d22; }
         .btn-draw:disabled { background-color: #bdc3c7; box-shadow: 0 4px 0 #95a5a6; cursor: not-allowed; }
         
-        .winner-box { text-align: center; padding: 40px 20px; background: #fffde7; border: 3px dashed #fbc02d; border-radius: 12px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
+        .winner-box { text-align: center; padding: 40px 20px; background: #fffde7; border: 3px dashed #fbc02d; border-radius: 12px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;}
         .winner-title { color: #888; font-size: 16px; margin-bottom: 10px; }
-        .winner-name { font-size: 48px; font-weight: bold; color: #d32f2f; margin: 0; line-height: 1.2; }
-        .winner-id { font-size: 24px; color: #555; margin-top: 10px; }
+        .winner-name { font-size: 48px; font-weight: bold; color: #d32f2f; margin: 0; line-height: 1.2; transition: all 0.1s; }
+        .winner-id { font-size: 24px; color: #555; margin-top: 10px; transition: all 0.1s;}
+        
+        /* 動畫特效 */
+        .spinning { color: #3498db !important; opacity: 0.8; transform: scale(0.95); }
+        .winner-reveal { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         
         /* 右側：中獎名單區 */
-        .history-list { height: 400px; overflow-y: auto; padding-right: 5px; }
-        .history-item { background: #f9f9f9; padding: 12px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid #2ecc71; font-weight: bold; display: flex; justify-content: space-between; }
+        .history-list { height: 450px; overflow-y: auto; padding-right: 5px; }
+        .history-item { background: #f9f9f9; padding: 12px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid #2ecc71; font-weight: bold; display: flex; justify-content: space-between; animation: slideIn 0.3s ease-out; }
         .history-item span.id { color: #7f8c8d; font-size: 14px; font-weight: normal; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* 響應式設計：小螢幕變為上下排列 */
-        @media (max-width: 900px) {
-            .grid-container { grid-template-columns: 1fr; }
-            textarea { height: 200px; }
-            .history-list { height: 250px; }
-        }
+        @media (max-width: 900px) { .grid-container { grid-template-columns: 1fr; } .history-list { height: 250px; } }
     </style>
 </head>
 <body>
 
-<h1 class="header">🎲 三欄式不重複抽籤系統</h1>
+<h1 class="header">🎲 懸疑感！不重複抽籤系統</h1>
 
 <div class="grid-container">
     <div class="panel">
-        <h3>1. 貼上名單</h3>
-        <p style="font-size: 13px; color: #666; margin-top: -5px;">支援直接貼上。格式：學號 姓名 (用空格或逗號隔開)</p>
-        <textarea id="input-list" placeholder="請在此貼上名單...&#10;1101 王大明&#10;1102 李小華"></textarea>
-        <button class="btn btn-update" onclick="updateList()">確認並載入名單</button>
+        <h3>1. 名單管理</h3>
+        
+        <div class="file-upload-wrapper">
+            <label for="file-upload" style="font-size: 14px; display: block; margin-bottom: 5px; font-weight: bold;">📁 載入 .txt 或 .csv 檔案</label>
+            <input type="file" id="file-upload" accept=".txt,.csv" style="width: 100%; font-size: 12px;">
+        </div>
+        
+        <p style="font-size: 13px; color: #666; margin: 10px 0 5px 0;">或手動輸入/貼上 (學號 姓名)：</p>
+        <textarea id="input-list" placeholder="範例：&#10;1101 王大明&#10;1102 李小華"></textarea>
+        
+        <button class="btn btn-update" onclick="updateList()">✅ 確認並載入名單</button>
+        <button class="btn btn-clear" onclick="clearAll()">🗑️ 清空所有名單與紀錄</button>
     </div>
 
     <div class="panel">
@@ -70,11 +82,11 @@
             <span>已抽出：<span id="drawn-count" style="color: #e74c3c;">0</span> 人</span>
         </div>
         
-        <button id="draw-btn" class="btn btn-draw" onclick="draw()">🎊 開始抽籤 🎊</button>
+        <button id="draw-btn" class="btn btn-draw" onclick="startDraw()" disabled>🎊 開始抽籤 🎊</button>
 
         <div class="winner-box">
             <div class="winner-title">目前中獎者</div>
-            <div id="winner-name" class="winner-name">等待抽籤...</div>
+            <div id="winner-name" class="winner-name">等待載入名單...</div>
             <div id="winner-id" class="winner-id"></div>
         </div>
     </div>
@@ -90,6 +102,7 @@
 <script>
     let pool = [];
     let drawn = [];
+    let isSpinning = false;
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     // 播放中獎音效
@@ -101,64 +114,119 @@
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.4);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.5);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start(audioCtx.currentTime + i * 0.1);
-            osc.stop(audioCtx.currentTime + i * 0.1 + 0.4);
+            osc.stop(audioCtx.currentTime + i * 0.1 + 0.5);
         });
     }
+
+    // 處理檔案上傳
+    document.getElementById('file-upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('input-list').value = e.target.result;
+            alert('檔案讀取成功！請點擊「確認並載入名單」。');
+            document.getElementById('file-upload').value = ''; // Reset
+        };
+        reader.readAsText(file);
+    });
 
     // 載入名單
     function updateList() {
         const text = document.getElementById('input-list').value.trim();
-        if (!text) { alert('名單不可為空！請貼上資料。'); return; }
+        if (!text) { alert('名單不可為空！'); return; }
         
-        // 支援換行分割，並容許逗號、Tab或空格分開學號與姓名
         pool = text.split('\n').filter(line => line.trim() !== '').map(line => {
             const parts = line.trim().split(/[,，\s\t]+/);
-            return { 
-                id: parts.length > 1 ? parts[0] : '無學號', 
-                name: parts.length > 1 ? parts[1] : parts[0] 
-            };
+            return { id: parts.length > 1 ? parts[0] : '無學號', name: parts.length > 1 ? parts[1] : parts[0] };
         });
         
-        drawn = []; // 清空歷史
         updateUI();
-        document.getElementById('winner-name').innerText = "等待抽籤...";
+        document.getElementById('winner-name').innerText = "準備就緒";
         document.getElementById('winner-id').innerText = "";
+        document.getElementById('winner-name').classList.remove('winner-reveal');
     }
 
-    // 執行抽籤
-    function draw() {
-        if (pool.length === 0) return;
-        
-        // 隨機選取並移出名單 (確保不重複)
-        const index = Math.floor(Math.random() * pool.length);
-        const winner = pool.splice(index, 1)[0]; 
-        
-        // 加入中獎名單並放到最前面
-        drawn.unshift(winner); 
-        
-        // 更新畫面
-        document.getElementById('winner-name').innerText = winner.name;
-        document.getElementById('winner-id').innerText = winner.id !== '無學號' ? `學號: ${winner.id}` : '';
-        
-        playWinSound();
-        updateUI();
+    // 清空全部
+    function clearAll() {
+        if(confirm('確定要清空輸入框、待抽名單與中獎紀錄嗎？')) {
+            document.getElementById('input-list').value = '';
+            pool = [];
+            drawn = [];
+            updateUI();
+            document.getElementById('winner-name').innerText = "等待載入名單...";
+            document.getElementById('winner-id').innerText = "";
+        }
     }
 
-    // 更新介面與歷史名單
+    // 開始抽籤動畫
+    function startDraw() {
+        if (pool.length === 0 || isSpinning) return;
+        
+        isSpinning = true;
+        updateUI(); // 鎖定按鈕
+        
+        // 預先決定中獎者
+        const winIndex = Math.floor(Math.random() * pool.length);
+        const winner = pool[winIndex];
+        
+        const nameEl = document.getElementById('winner-name');
+        const idEl = document.getElementById('winner-id');
+        nameEl.classList.add('spinning');
+        nameEl.classList.remove('winner-reveal');
+        
+        // 設定減速動畫變數
+        let spins = 0;
+        const maxSpins = 25; // 總跳動次數
+        let currentDelay = 30; // 初始速度 (毫秒)
+        
+        function spinTick() {
+            if (spins < maxSpins) {
+                // 顯示隨機名字
+                const randPerson = pool[Math.floor(Math.random() * pool.length)];
+                nameEl.innerText = randPerson.name;
+                idEl.innerText = randPerson.id !== '無學號' ? randPerson.id : '';
+                
+                spins++;
+                // 核心邏輯：逐漸增加延遲時間，製造「越來越慢」的煞車感
+                currentDelay += Math.floor(spins * 1.5); 
+                
+                setTimeout(spinTick, currentDelay);
+            } else {
+                // 動畫結束，顯示真正中獎者
+                pool.splice(winIndex, 1); // 從名單移除
+                drawn.unshift(winner);    // 加入歷史
+                
+                nameEl.classList.remove('spinning');
+                nameEl.classList.add('winner-reveal');
+                nameEl.innerText = winner.name;
+                idEl.innerText = winner.id !== '無學號' ? `學號: ${winner.id}` : '';
+                
+                playWinSound();
+                isSpinning = false;
+                updateUI();
+            }
+        }
+        
+        // 啟動動畫
+        spinTick();
+    }
+
+    // 更新介面狀態
     function updateUI() {
         document.getElementById('remain-count').innerText = pool.length;
         document.getElementById('drawn-count').innerText = drawn.length;
-        document.getElementById('draw-btn').disabled = (pool.length === 0);
+        document.getElementById('draw-btn').disabled = (pool.length === 0 || isSpinning);
         
         const historyDiv = document.getElementById('history-list');
         if (drawn.length === 0) {
             historyDiv.innerHTML = '<div style="color: #aaa; text-align: center; margin-top: 20px;">尚未有中獎紀錄</div>';
         } else {
-            historyDiv.innerHTML = drawn.map((p, i) => `
+            historyDiv.innerHTML = drawn.map((p) => `
                 <div class="history-item">
                     <span>${p.name}</span>
                     <span class="id">${p.id}</span>
